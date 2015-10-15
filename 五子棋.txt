@@ -1,0 +1,349 @@
+#include<stdlib.h>
+#include<stdio.h>
+#include<string.h>
+#include<conio.h>
+
+int _(void)    // 普通数据输入 （不可有空白符） 
+{
+	char val[11] = {0};  				  // 把数组初始化为'\0' ，（非必要） 
+	int temp;
+	int key = 1; 
+	key = scanf("%[9-0]", val); 	      // 不能有空格 
+
+	while(key == 0 || getchar() != '\n')  // 利用返回值判断是否正确输入（读取失败返回0），如果不是读取失败，就判断是否有非法输入（前后关系不能乱） 
+	{
+		if(key == 0 || getchar() != '\n') // 空输入或非法输入时清除缓存（空输入时就不可能是非法输入） 
+		{
+			key = 1;
+			while(getchar() != '\n');
+		}
+		printf("\t输入错误，请重新输入：");
+		key = scanf("%[9-0]", val);
+	}
+	temp = atoi(val);
+	return temp;
+}
+
+void Array(char (*array)[3], int *sum)   // 数组初始化 
+{
+	int i;
+	*sum = 0;
+	for(i=0; i<81; ++i)
+	{
+		itoa(i+1, array[i], 10);
+	}
+	return;
+}
+
+void ShowGame(char (*array)[3])  // 显示棋盘 
+{
+	system("cls");
+	int i;
+	int j;
+	printf("\n\t\t");
+	for(i=0; i<72; )
+	{
+		printf("%s", array[i]);
+		++i;
+		for(j=0; j<8; ++j)
+		{
+			printf("%3c%3s", '-', array[j+i]);
+		}
+		printf("\n\t\t");
+		i = j + i;
+		printf("%c", '|');
+		for(j=0; j<8;++j)
+		{
+			printf("%6c", '|');
+		}
+		printf("\n\t\t");
+	} 
+	printf("%s", array[i]);
+	++i;
+	for(j=0; j<8; ++j)
+	{
+		printf("%3c%3s", '-', array[i+j]);
+	}
+	printf("\n");
+	printf("\n\t################################################################\n");
+	return;
+}
+
+int ScanfGame(char (*array)[3], int *sum)  // 玩家输入棋子位置 
+{
+	static int i = 0;
+	int val;
+	if(i%2 == 0)
+	{
+		printf("\t请%s方输入放棋的位置：", "○");
+		val = AI(array); 
+		if(val == 99)
+		{
+			return 99;
+		}
+		strcpy(array[val], "○");
+		*sum++;
+		val = AI_Crosswise(array, i, sum);
+	}
+	else
+	{
+		printf("\t请%s方输入放棋的位置：", "●");
+		val = AI(array); 
+		if(val == 99)
+		{
+			return 99;
+		}
+		strcpy(array[val], "●");
+		*sum++;
+		val = AI_Crosswise(array, i, sum);
+	}
+	++i;
+	return val;
+}
+
+int AI(char (*array)[3])  // 判断输入的位置是否已经有了棋子 
+{
+	int val;
+	val = AI_Scanf();
+	while((strcmp(array[val], "○") == 0) || (strcmp(array[val], "●") == 0))
+	{
+		printf("\t该位置已有棋子，请重新输入位置：");
+		val = AI_Scanf();
+	}
+	return val;
+}
+
+int AI_Scanf(void)   // 棋子位置输入 
+{
+	int i = 1;
+	int val = _();
+	while(i)
+	{
+		if(val == 0)
+		{
+			printf("\t请按任意键结束程序...\n");
+			getch();
+			exit(EXIT_SUCCESS);
+		}
+		else if(val == 100)
+		{
+			printf("\t请按任意键返回主菜单...\n");
+			return 99;
+		}
+		else if((val<0) || ((val>81) && val != 100))
+		{
+			printf("\t输入错误，请重新输入：");
+			val = _();
+		}
+		else
+		{
+			i = 0;
+		}
+	}
+	return val-1;
+}
+
+/*
+int AI_Draw(char (*array)[3])  // 判断因棋子满而平局的情况 
+{
+	int val = 0;
+	while((strcmp(array[val], "○") == 0) || (strcmp(array[val], "●") == 0))
+	{
+		++val; 
+	}
+	return val;
+}*/
+
+int AI_Winner(char (*array)[3], char *str, int val, int len, int x)  // 判断是否符合胜利条件 
+{
+	int i;
+	int k = 0;
+	for(i=val; i<len; i=i+x)
+	{
+		if(strcmp(array[i], str) == 0)
+		{
+			++k;
+		}
+		else if(k == 5)
+		{
+			break;
+		}
+		else
+		{
+			k = 0;
+		}
+	}
+	return k;
+}
+
+int AI_Judge(char (*array)[3], char *str)  // 判断横向 
+{
+	int i;
+	for(i=0; i<81; i=i+9)
+	{
+		if(AI_Winner(array, str, i, i+9, 1) == 5)
+		{
+			return 5;
+		}
+	}
+	return 10086;
+}
+
+int AI_Vertical(char (*array)[3], char *str)  // 判断竖向 
+{
+	int i;
+	for(i=0; i<9; ++i)
+	{
+		if(AI_Winner(array, str, i, i+73, 9) == 5)
+		{
+			return 5;
+		}
+	}
+	return 10086;
+}
+
+int AI_Backslash(char (*array)[3], char *str)  // 判断反斜杠 
+{
+	int i;
+	int j = 0;
+	for(i=0; i<5; ++i)
+	{
+		if(AI_Winner(array, str, i, 81-9*i, 10) == 5)
+		{
+			return 5;
+		}
+	}
+	for(i=36; i>9; i=i-9, ++j)
+	{
+		if(AI_Winner(array, str, i, 80-j, 10) == 5)
+		{
+			return 5;
+		}
+	}
+	return 10086;
+}
+
+int AI_Positive(char (*array)[3], char *str)  // 判断正斜杠 
+{
+	int i;
+	int j = 0;
+	for(i=8; i>3; --i)
+	{
+		if(AI_Winner(array, str, i, 1+9*i, 8) == 5)
+		{
+			return 5;
+		}
+	}
+	for(i=17; i>45; i=i+9, ++j)
+	{
+		if(AI_Winner(array, str, i, 73+j, 8) == 5)
+		{
+			return 5;
+		}
+	}
+	return 10086;
+}
+
+int AI_Crosswise(char (*array)[3], int i, int *sum)  // 判断胜利或平局 
+{
+	if(i%2 == 0)
+	{
+		if((AI_Judge(array, "○") == 5) || (AI_Vertical(array, "○") == 5) || (AI_Backslash(array, "○") == 5) || (AI_Positive(array, "○") == 5))
+		{
+			ShowGame(array);
+			printf("\t恭喜○方胜利！\n");
+			return 99;
+		}
+	}
+	else
+	{
+		if((AI_Judge(array, "●") == 5) || (AI_Vertical(array, "●") == 5) || (AI_Backslash(array, "●") == 5) || (AI_Positive(array, "●") == 5))
+		{
+			ShowGame(array);
+			printf("\t恭喜●方胜利！\n");
+			return 99;
+		}
+	}
+	if(*sum == 80)
+	{
+		printf("\t因棋盘已满，本局平局！\n");
+		return 99;
+	}
+	return 10086;
+}
+
+void Show(void)          // 主菜单显示 
+{
+	printf("\n\n\n\t\t     ************************************\n");
+	printf("\t\t     *  五子棋，请选择需要的选项：      *\n");
+	printf("\t\t     *  1、双人对战。                   *\n");
+	printf("\t\t     *  2、帮助。                       *\n");
+	printf("\t\t     *  0、退出程序。                   *\n");
+	printf("\t\t     ************************************\n");
+	printf("\n\t################################################################\n\t请输入选项：");
+	return;
+}
+
+void Help(void)
+{
+	system("cls");
+	printf("\n\t游戏规则：\n");
+	printf("\t1、游戏开始时，随机○方或●方先走。\n");
+	printf("\t2、双方中的一方的横、竖或对角线连续为5个子时即可胜利。\n");
+	printf("\t3、当棋局满棋子但没人胜利时，即为平局。\n");
+	printf("\n\n\t其它规则：\n");
+	printf("\t在游戏时，输入0直接结束程序，输入100返回主菜单。\n");
+	return;
+}
+
+void Switch(char (*array)[3], int *sum)        // 主菜单选择 
+{
+	int val;
+	val = _();
+	switch(val)
+	{
+		case 0:
+				printf("\t请按任意键结束程序...\n");
+				getch(); 
+				exit(EXIT_SUCCESS);
+
+		case 1:
+				while(1)
+				{
+					ShowGame(array);
+					if(ScanfGame(array, sum) == 99)
+					{
+						Array(array, sum);
+						getch();
+						return;
+					}
+				}
+				
+		case 2:
+				Help();
+				getch(); 
+				return;
+				
+		default :
+				  printf("\t无该选项，请按任意键后重新输入...\n");
+				  getch();
+				  return;
+	}
+	return;
+}
+
+int main(int argc, char *argv[])
+{
+	system("color f");
+	char array[81][3];
+	int val; 
+	int sum = 0;
+	Array(array, &sum);
+	while(1)
+	{
+		system("cls");
+		Show();
+		Switch(array, &sum);
+	}
+	return EXIT_SUCCESS;
+}
